@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}About JobPost Aggregator - Search. Discover. Apply.{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 48px 0; max-width: 900px;">
+  
+  <div style="text-align: center; margin-bottom: 40px;">
+    <span class="tag-badge" style="background: var(--primary-light); color: var(--primary); font-size: 13px; padding: 6px 14px; margin-bottom: 12px; display: inline-block;">
+      System Overview & Methodology
+    </span>
+    <h1 style="font-size: 34px; font-weight: 800; color: var(--secondary); margin-bottom: 10px;">
+      JOBPOST AGGREGATOR
+    </h1>
+    <p style="font-size: 18px; font-weight: 600; color: var(--primary);">
+      "Search. Discover. Apply."
+    </p>
+  </div>
+
+  <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 36px; box-shadow: var(--shadow-sm); margin-bottom: 32px;">
+    <h2 style="font-size: 20px; font-weight: 800; color: var(--secondary); margin-bottom: 14px;">
+      1. Mission & Vision
+    </h2>
+    <p style="font-size: 15px; color: var(--text-muted); line-height: 1.7; margin-bottom: 16px;">
+      In today's fragmented hiring market, job seekers must constantly tab across dozens of isolated career portals, company boards, and regional listings. This leads to duplicate applications, expired opportunities, and scattered tracking.
+    </p>
+    <p style="font-size: 15px; color: var(--text-muted); line-height: 1.7;">
+      <strong>JobPost Aggregator</strong> is a centralized career discovery and aggregation platform. We collect, organize, deduplicate, filter, and index authentic job posts from authorized job sources across the globe into a single unified search experience.
+    </p>
+  </div>
+
+  <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 36px; box-shadow: var(--shadow-sm); margin-bottom: 32px;">
+    <h2 style="font-size: 20px; font-weight: 800; color: var(--secondary); margin-bottom: 14px;">
+      2. Core Aggregation Architecture
+    </h2>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+      <div style="background: var(--bg-page); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px;">
+        <div style="font-size: 22px; margin-bottom: 8px;">📡</div>
+        <h3 style="font-size: 15px; font-weight: 700; color: var(--secondary); margin-bottom: 6px;">Multi-Source Feed Ingestion</h3>
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
+          Continuous synchronization connectors gather data from TechCareers, RemoteHub, CampusHire, DevJobs, and partner feeds.
+        </p>
+      </div>
+
+      <div style="background: var(--bg-page); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px;">
+        <div style="font-size: 22px; margin-bottom: 8px;">🔍</div>
+        <h3 style="font-size: 15px; font-weight: 700; color: var(--secondary); margin-bottom: 6px;">Smart Duplicate Clustering</h3>
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
+          Cross-source deduplication clusters matching roles side-by-side, preserving source integrity while preventing repetitive candidate spam.
+        </p>
+      </div>
+
+      <div style="background: var(--bg-page); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px;">
+        <div style="font-size: 22px; margin-bottom: 8px;">🛡️</div>
+        <h3 style="font-size: 15px; font-weight: 700; color: var(--secondary); margin-bottom: 6px;">Direct Source Authentication</h3>
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
+          Candidates always apply directly on the legitimate employer or partner portal. Zero hidden proxy forms or resume brokering.
+        </p>
+      </div>
+
+      <div style="background: var(--bg-page); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px;">
+        <div style="font-size: 22px; margin-bottom: 8px;">📊</div>
+        <h3 style="font-size: 15px; font-weight: 700; color: var(--secondary); margin-bottom: 6px;">Personal Application Pipeline</h3>
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
+          Candidates can log and track interview progress across 5 stages (Applied, Reviewing, Interviewing, Offered, Rejected) in real time.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 36px; box-shadow: var(--shadow-sm);">
+    <h2 style="font-size: 20px; font-weight: 800; color: var(--secondary); margin-bottom: 14px;">
+      3. Technology Stack
+    </h2>
+    <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 16px;">
+      Built strictly adhering to the specified technical constraints with maximum performance and zero bloated frameworks:
+    </p>
+    <ul style="padding-left: 20px; font-size: 14px; color: var(--text-main); line-height: 1.8;">
+      <li><strong>Frontend:</strong> Pure Semantic HTML5, Modular CSS3 Architecture (custom tokens, flexbox & grid), and Vanilla ECMAScript.</li>
+      <li><strong>Backend:</strong> Python 3.11 with Flask framework & RESTful routing endpoints.</li>
+      <li><strong>Database:</strong> Relational MySQL/MariaDB with indexed schema, foreign keys, and normalized entity design.</li>
+      <li><strong>No Heavy Frameworks:</strong> Strictly zero React, Vue, Angular, Node.js, Bootstrap, or Tailwind dependencies.</li>
+    </ul>
+  </div>
+
+</div>
+{% endblock %}

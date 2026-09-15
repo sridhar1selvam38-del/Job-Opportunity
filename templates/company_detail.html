@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}{{ company.name }} Careers & Openings - JobPost Aggregator{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 36px 0;">
+  
+  <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--shadow-sm); margin-bottom: 32px;">
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <div class="company-logo-wrap" style="width: 72px; height: 72px;">
+          {% if company.logo_url %}
+            <img src="{{ company.logo_url }}" alt="{{ company.name }}" class="company-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+            <div class="company-logo-placeholder" style="display:none; font-size: 28px;">{{ company.name[0] }}</div>
+          {% else %}
+            <div class="company-logo-placeholder" style="font-size: 28px;">{{ company.name[0] }}</div>
+          {% endif %}
+        </div>
+        <div>
+          <h1 style="font-size: 26px; font-weight: 800; color: var(--secondary); margin-bottom: 4px;">{{ company.name }}</h1>
+          <div style="font-size: 14px; color: var(--text-muted);">
+            📍 {{ company.location }} &bull; 🏢 {{ company.industry }} &bull; 👥 {{ company.company_size }}
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 14px; font-weight: 700; color: var(--primary); background: var(--primary-light); padding: 6px 14px; border-radius: var(--radius-full);">
+          ⭐ {{ company.rating }} / 5.0 Rating
+        </span>
+        {% if company.website %}
+          <a href="{{ company.website }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
+            Company Website ↗
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="margin-top: 20px; font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 860px;">
+      {{ company.description }}
+    </div>
+  </div>
+
+  <div class="section-header">
+    <div>
+      <h2 class="section-title">Open Opportunities at {{ company.name }} ({{ jobs|length }})</h2>
+      <p class="section-subtitle">Aggregated from verified partner sources</p>
+    </div>
+  </div>
+
+  {% if jobs %}
+    <div class="job-cards-grid">
+      {% for job in jobs %}
+        <div class="job-card">
+          <div class="job-card-top">
+            <div class="job-card-header-info">
+              <span class="source-badge badge-source-{{ job.source_code }}" style="margin-bottom: 6px;">
+                {{ job.source_name }}
+              </span>
+              <h3 style="margin: 0;">
+                <a href="/job/{{ job.id }}" class="job-title-link">{{ job.title }}</a>
+              </h3>
+            </div>
+          </div>
+
+          <div class="job-details-meta">
+            <span class="meta-item">📍 {{ job.location }}</span>
+            <span class="meta-item">💼 {{ job.job_type }}</span>
+            <span class="meta-item">⏱️ {{ job.experience_level }}</span>
+          </div>
+
+          <div class="job-card-footer">
+            <div class="salary-tag">
+              {% if job.salary_min and job.salary_max %}
+                ${{ "{:,}".format(job.salary_min) }} - ${{ "{:,}".format(job.salary_max) }}
+              {% elif job.salary_min %}
+                ${{ "{:,}".format(job.salary_min) }}+
+              {% else %}
+                Competitive
+              {% endif %}
+            </div>
+
+            <a href="/job/{{ job.id }}" class="btn btn-sm btn-primary">Details & Apply</a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="background: var(--bg-surface); padding: 40px; text-align: center; border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+      <p>No active openings currently for this company. Check back soon!</p>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

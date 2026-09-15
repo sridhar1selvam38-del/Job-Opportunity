@@ -1,0 +1,6 @@
+{
+  "name": "JobPost Aggregator",
+  "description": "Smart Job Post Aggregation & Career Discovery System - Search. Discover. Apply.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

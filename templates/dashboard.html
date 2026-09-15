@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+
+{% block title %}User Dashboard - JobPost Aggregator{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <div class="container">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div class="avatar-initial" style="width: 56px; height: 56px; font-size: 22px;">
+          {{ user.full_name[0] }}
+        </div>
+        <div>
+          <h1 style="font-size: 24px; font-weight: 800; color: var(--secondary); margin: 0;">
+            {{ user.full_name }}
+          </h1>
+          <div style="font-size: 13px; color: var(--text-muted);">
+            {{ user.headline or 'Job Seeker' }} &bull; 📍 {{ user.location }} &bull; 💼 {{ user.experience_level }}
+          </div>
+        </div>
+      </div>
+
+      <a href="/jobs" class="btn btn-primary btn-sm">Browse New Jobs</a>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs-container">
+      <div class="dashboard-tabs">
+        <button type="button" class="dashboard-tab active" data-tab-target="tabApplications">
+          📋 Application Pipeline ({{ applications|length }})
+        </button>
+        <button type="button" class="dashboard-tab" data-tab-target="tabSaved">
+          ★ Saved Jobs ({{ saved_jobs|length }})
+        </button>
+        <button type="button" class="dashboard-tab" data-tab-target="tabAlerts">
+          🔔 Job Alerts ({{ alerts|length }})
+        </button>
+        <button type="button" class="dashboard-tab" data-tab-target="tabNotifications">
+          📫 Notifications ({{ notifications|length }})
+        </button>
+        <button type="button" class="dashboard-tab" data-tab-target="tabHistory">
+          🕒 Search History ({{ search_history|length }})
+        </button>
+        <button type="button" class="dashboard-tab" data-tab-target="tabProfile">
+          👤 Profile & Resume
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="container dashboard-grid tabs-container">
+  
+  <!-- TAB 1: Application Tracker Pipeline -->
+  <div class="tab-pane active" id="tabApplications">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+      <div>
+        <h2 style="font-size: 18px; font-weight: 700; color: var(--secondary);">Application Tracking Pipeline</h2>
+        <p style="font-size: 13px; color: var(--text-muted);">Organize every job opportunity from initial application to final offer</p>
+      </div>
+    </div>
+
+    <div class="application-pipeline">
+      
+      <!-- Stage: Applied -->
+      <div class="pipeline-col">
+        <div class="pipeline-col-header">
+          <span>Applied</span>
+          <span class="status-badge status-applied">{{ pipeline.Applied|length }}</span>
+        </div>
+        {% for app in pipeline.Applied %}
+          <div class="pipeline-card">
+            <div class="pipeline-card-title"><a href="/job/{{ app.job_id }}">{{ app.job_title }}</a></div>
+            <div class="pipeline-card-company">{{ app.company_name }}</div>
+            {% if app.notes %}
+              <div style="font-size: 12px; color: var(--text-subtle); margin-bottom: 8px; font-style: italic;">"{{ app.notes }}"</div>
+            {% endif %}
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+              <span style="color: var(--text-subtle);">{{ app.applied_date }}</span>
+              <button type="button" class="btn btn-sm btn-outline btn-track-application" data-job-id="{{ app.job_id }}" data-job-title="{{ app.job_title }}" data-current-status="{{ app.status }}" data-current-notes="{{ app.notes or '' }}" style="padding: 2px 6px; font-size: 11px;">Update</button>
+            </div>
+          </div>
+        {% else %}
+          <div style="font-size: 12px; color: var(--text-subtle); text-align: center; padding: 20px 0;">No applications here</div>
+        {% endfor %}
+      </div>
+
+      <!-- Stage: Reviewing -->
+      <div class="pipeline-col">
+        <div class="pipeline-col-header">
+          <span>Reviewing</span>
+          <span class="status-badge status-reviewing">{{ pipeline.Reviewing|length }}</span>
+        </div>
+        {% for app in pipeline.Reviewing %}
+          <div class="pipeline-card">
+            <div class="pipeline-card-title"><a href="/job/{{ app.job_id }}">{{ app.job_title }}</a></div>
+            <div class="pipeline-card-company">{{ app.company_name }}</div>
+            {% if app.notes %}<div style="font-size: 12px; color: var(--text-subtle); margin-bottom: 8px; font-style: italic;">"{{ app.notes }}"</div>{% endif %}
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+              <span style="color: var(--text-subtle);">{{ app.applied_date }}</span>
+              <button type="button" class="btn btn-sm btn-outline btn-track-application" data-job-id="{{ app.job_id }}" data-job-title="{{ app.job_title }}" data-current-status="{{ app.status }}" data-current-notes="{{ app.notes or '' }}" style="padding: 2px 6px; font-size: 11px;">Update</button>
+            </div>
+          </div>
+        {% else %}
+          <div style="font-size: 12px; color: var(--text-subtle); text-align: center; padding: 20px 0;">None</div>
+        {% endfor %}
+      </div>
+
+      <!-- Stage: Interviewing -->
+      <div class="pipeline-col">
+        <div class="pipeline-col-header">
+          <span>Interviewing</span>
+          <span class="status-badge status-interviewing">{{ pipeline.Interviewing|length }}</span>
+        </div>
+        {% for app in pipeline.Interviewing %}
+          <div class="pipeline-card">
+            <div class="pipeline-card-title"><a href="/job/{{ app.job_id }}">{{ app.job_title }}</a></div>
+            <div class="pipeline-card-company">{{ app.company_name }}</div>
+            {% if app.notes %}<div style="font-size: 12px; color: var(--text-subtle); margin-bottom: 8px; font-style: italic;">"{{ app.notes }}"</div>{% endif %}
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+              <span style="color: var(--text-subtle);">{{ app.applied_date }}</span>
+              <button type="button" class="btn btn-sm btn-outline btn-track-application" data-job-id="{{ app.job_id }}" data-job-title="{{ app.job_title }}" data-current-status="{{ app.status }}" data-current-notes="{{ app.notes or '' }}" style="padding: 2px 6px; font-size: 11px;">Update</button>
+            </div>
+          </div>
+        {% else %}
+          <div style="font-size: 12px; color: var(--text-subtle); text-align: center; padding: 20px 0;">None</div>
+        {% endfor %}
+      </div>
+
+      <!-- Stage: Offered -->
+      <div class="pipeline-col">
+        <div class="pipeline-col-header">
+          <span>Offered</span>
+          <span class="status-badge status-offered">{{ pipeline.Offered|length }}</span>
+        </div>
+        {% for app in pipeline.Offered %}
+          <div class="pipeline-card">
+            <div class="pipeline-card-title"><a href="/job/{{ app.job_id }}">{{ app.job_title }}</a></div>
+            <div class="pipeline-card-company">{{ app.company_name }}</div>
+            {% if app.notes %}<div style="font-size: 12px; color: var(--text-subtle); margin-bottom: 8px; font-style: italic;">"{{ app.notes }}"</div>{% endif %}
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+              <span style="color: var(--text-subtle);">{{ app.applied_date }}</span>
+              <button type="button" class="btn btn-sm btn-outline btn-track-application" data-job-id="{{ app.job_id }}" data-job-title="{{ app.job_title }}" data-current-status="{{ app.status }}" data-current-notes="{{ app.notes or '' }}" style="padding: 2px 6px; font-size: 11px;">Update</button>
+            </div>
+          </div>
+        {% else %}
+          <div style="font-size: 12px; color: var(--text-subtle); text-align: center; padding: 20px 0;">None</div>
+        {% endfor %}
+      </div>
+
+      <!-- Stage: Rejected -->
+      <div class="pipeline-col">
+        <div class="pipeline-col-header">
+          <span>Rejected</span>
+          <span class="status-badge status-rejected">{{ pipeline.Rejected|length }}</span>
+        </div>
+        {% for app in pipeline.Rejected %}
+          <div class="pipeline-card">
+            <div class="pipeline-card-title"><a href="/job/{{ app.job_id }}">{{ app.job_title }}</a></div>
+            <div class="pipeline-card-company">{{ app.company_name }}</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
+              <span style="color: var(--text-subtle);">{{ app.applied_date }}</span>
+              <button type="button" class="btn btn-sm btn-outline btn-track-application" data-job-id="{{ app.job_id }}" data-job-title="{{ app.job_title }}" data-current-status="{{ app.status }}" data-current-notes="{{ app.notes or '' }}" style="padding: 2px 6px; font-size: 11px;">Update</button>
+            </div>
+          </div>
+        {% else %}
+          <div style="font-size: 12px; color: var(--text-subtle); text-align: center; padding: 20px 0;">None</div>
+        {% endfor %}
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB 2: Saved Jobs -->
+  <div class="tab-pane" id="tabSaved">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Saved Job Bookmarks</h2>
+        <p class="section-subtitle">Positions you have saved for later review or application</p>
+      </div>
+    </div>
+
+    {% if saved_jobs %}
+      <div class="job-cards-grid">
+        {% for job in saved_jobs %}
+          <div class="job-card">
+            <div class="job-card-top">
+              <div class="job-card-header-info">
+                <a href="/company/{{ job.company_slug }}" class="company-name-link">{{ job.company_name }}</a>
+                <h3 style="margin: 0;"><a href="/job/{{ job.id }}" class="job-title-link">{{ job.title }}</a></h3>
+              </div>
+              <span class="source-badge badge-source-{{ job.source_code }}">{{ job.source_name }}</span>
+            </div>
+
+            <div class="job-details-meta">
+              <span>📍 {{ job.location }}</span>
+              <span>💼 {{ job.job_type }}</span>
+            </div>
+
+            <div class="job-card-footer">
+              <div class="salary-tag">
+                {% if job.salary_min and job.salary_max %}
+                  ${{ "{:,}".format(job.salary_min) }} - ${{ "{:,}".format(job.salary_max) }}
+                {% elif job.salary_min %}
+                  ${{ "{:,}".format(job.salary_min) }}+
+                {% else %}
+                  Competitive
+                {% endif %}
+              </div>
+              <div class="card-actions">
+                <button type="button" class="btn-bookmark saved" data-job-id="{{ job.id }}" title="Remove Bookmark">★</button>
+                <a href="/job/{{ job.id }}" class="btn btn-sm btn-primary">Apply Now</a>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div style="background: var(--bg-surface); padding: 40px; text-align: center; border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+        <p style="color: var(--text-muted); margin-bottom: 16px;">You have no saved jobs yet.</p>
+        <a href="/jobs" class="btn btn-primary btn-sm">Explore Job Postings</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- TAB 3: Job Alerts -->
+  <div class="tab-pane" id="tabAlerts">
+    <div style="display: grid; grid-template-columns: 1fr 340px; gap: 28px;">
+      
+      <!-- Existing Alerts -->
+      <div>
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Active Job Alerts</h2>
+            <p class="section-subtitle">Get notified when new aggregated jobs match your criteria</p>
+          </div>
+        </div>
+
+        {% if alerts %}
+          {% for alert in alerts %}
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <div style="font-weight: 700; font-size: 15px; color: var(--secondary);">{{ alert.title }}</div>
+                <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+                  Keyword: <strong>{{ alert.keyword or 'Any' }}</strong> &bull; 
+                  Location: <strong>{{ alert.location or 'Any' }}</strong> &bull; 
+                  Frequency: <strong>{{ alert.frequency }}</strong>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <a href="/jobs?q={{ alert.keyword or '' }}&location={{ alert.location or '' }}" class="btn btn-sm btn-secondary">View Matches</a>
+                <form action="/dashboard/alerts/delete" method="POST" style="display: inline;" onsubmit="return confirm('Delete this job alert?')">
+                  <input type="hidden" name="alert_id" value="{{ alert.id }}">
+                  <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div style="background: var(--bg-surface); padding: 32px; text-align: center; border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-muted);">
+            No job alerts configured yet. Create one on the right to receive matched postings!
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Create New Alert Card -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; height: fit-content; box-shadow: var(--shadow-sm);">
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--secondary); margin-bottom: 16px;">Create New Job Alert</h3>
+        <form action="/dashboard/alerts/create" method="POST">
+          <div class="form-group">
+            <label class="form-label" for="alert_title">Alert Name *</label>
+            <input type="text" name="title" id="alert_title" class="form-control" placeholder="e.g. Remote Python Roles" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="alert_keyword">Keyword or Skill</label>
+            <input type="text" name="keyword" id="alert_keyword" class="form-control" placeholder="e.g. Python, Machine Learning">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="alert_location">Target Location</label>
+            <input type="text" name="location" id="alert_location" class="form-control" placeholder="e.g. Remote, San Francisco">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="alert_frequency">Frequency</label>
+            <select name="frequency" id="alert_frequency" class="form-control">
+              <option value="Instant">Instant</option>
+              <option value="Daily" selected>Daily Summary</option>
+              <option value="Weekly">Weekly Digest</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%;">Create Alert</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB 4: Notifications -->
+  <div class="tab-pane" id="tabNotifications">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">In-App Notifications</h2>
+        <p class="section-subtitle">System notifications, alert matches, and application updates</p>
+      </div>
+      {% if notifications %}
+        <form action="/dashboard/notifications/read-all" method="POST">
+          <button type="submit" class="btn btn-sm btn-secondary">Mark All as Read</button>
+        </form>
+      {% endif %}
+    </div>
+
+    {% if notifications %}
+      {% for notif in notifications %}
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px; display: flex; align-items: flex-start; justify-content: space-between; {% if not notif.is_read %}border-left: 4px solid var(--primary); background: #f8faff;{% endif %}">
+          <div>
+            <div style="font-weight: 700; font-size: 14px; color: var(--secondary);">{{ notif.title }}</div>
+            <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">{{ notif.message }}</div>
+            <div style="font-size: 11px; color: var(--text-subtle); margin-top: 6px;">{{ notif.created_at }}</div>
+          </div>
+          {% if notif.link %}
+            <a href="{{ notif.link }}" class="btn btn-sm btn-outline">View &rarr;</a>
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <div style="background: var(--bg-surface); padding: 32px; text-align: center; border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-muted);">
+        No notifications right now.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- TAB 5: Search History -->
+  <div class="tab-pane" id="tabHistory">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Your Recent Search Queries</h2>
+        <p class="section-subtitle">Quickly re-execute previous job searches</p>
+      </div>
+      {% if search_history %}
+        <form action="/dashboard/history/clear" method="POST">
+          <button type="submit" class="btn btn-sm btn-danger">Clear History</button>
+        </form>
+      {% endif %}
+    </div>
+
+    {% if search_history %}
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
+        {% for sh in search_history %}
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div style="font-weight: 600; font-size: 14px; color: var(--secondary);">{{ sh.search_term }}</div>
+              <div style="font-size: 12px; color: var(--text-subtle);">📍 {{ sh.location or 'All Locations' }} &bull; {{ sh.created_at }}</div>
+            </div>
+            <a href="/jobs?q={{ sh.search_term }}{% if sh.location %}&location={{ sh.location }}{% endif %}" class="btn btn-sm btn-outline">Search</a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div style="background: var(--bg-surface); padding: 32px; text-align: center; border: 1px solid var(--border-color); border-radius: var(--radius-md); color: var(--text-muted);">
+        No recent search history recorded.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- TAB 6: Profile & Resume -->
+  <div class="tab-pane" id="tabProfile">
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px; max-width: 760px; box-shadow: var(--shadow-sm);">
+      <h2 style="font-size: 20px; font-weight: 800; color: var(--secondary); margin-bottom: 4px;">Candidate Profile & Resume</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">Manage your public career profile and upload your resume for quicker applications</p>
+
+      <form action="/dashboard/profile" method="POST" enctype="multipart/form-data">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label" for="prof_name">Full Name</label>
+            <input type="text" name="full_name" id="prof_name" class="form-control" value="{{ user.full_name }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="prof_phone">Phone Number</label>
+            <input type="text" name="phone" id="prof_phone" class="form-control" value="{{ user.phone or '' }}">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label" for="prof_loc">Location</label>
+            <input type="text" name="location" id="prof_loc" class="form-control" value="{{ user.location or '' }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="prof_exp">Experience Level</label>
+            <select name="experience_level" id="prof_exp" class="form-control">
+              <option value="Fresher" {% if user.experience_level == 'Fresher' %}selected{% endif %}>Fresher / Graduate (0-1 yrs)</option>
+              <option value="1-3 years" {% if user.experience_level == '1-3 years' %}selected{% endif %}>Junior (1-3 yrs)</option>
+              <option value="3-5 years" {% if user.experience_level == '3-5 years' %}selected{% endif %}>Mid-Level (3-5 yrs)</option>
+              <option value="5+ years" {% if user.experience_level == '5+ years' %}selected{% endif %}>Senior (5+ yrs)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="prof_headline">Professional Headline</label>
+          <input type="text" name="headline" id="prof_headline" class="form-control" value="{{ user.headline or '' }}" placeholder="e.g., Full-Stack Python & React Engineer | CS Graduate">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="prof_skills">Key Skills (comma separated)</label>
+          <input type="text" name="skills" id="prof_skills" class="form-control" value="{{ user.skills or '' }}" placeholder="Python, MySQL, JavaScript, Flask, Docker, REST APIs">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="prof_bio">Bio / Summary</label>
+          <textarea name="bio" id="prof_bio" class="form-control" placeholder="A brief introduction highlighting your technical interests and career aspirations...">{{ user.bio or '' }}</textarea>
+        </div>
+
+        <!-- Resume File Upload Section -->
+        <div class="form-group" style="background: var(--bg-page); border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 20px; margin-top: 20px;">
+          <label class="form-label" style="font-weight: 700; margin-bottom: 4px;">Upload Resume (PDF, DOCX, TXT)</label>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+            {% if user.resume_filename %}
+              Current file: <strong>{{ user.resume_filename }}</strong> (<a href="/uploads/{{ user.resume_filename }}" target="_blank" style="color: var(--primary);">Download</a>)
+            {% else %}
+              No resume uploaded yet.
+            {% endif %}
+          </p>
+          <input type="file" name="resume" class="form-control" accept=".pdf,.doc,.docx,.txt">
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 12px;">Save Profile Changes</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

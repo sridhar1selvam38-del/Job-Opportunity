@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}JobPost Aggregator - Smart Job Post Aggregation & Career Discovery System{% endblock %}</title>
+  <meta name="description" content="Search and discover job opportunities from multiple authorized job sources in one centralized platform. Tagline: Search. Discover. Apply.">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      
+      <!-- Brand Logo -->
+      <a href="/" class="brand-wrapper">
+        <div class="brand-icon">J</div>
+        <div class="brand-titles">
+          <span class="brand-name">JOBPOST AGGREGATOR</span>
+          <span class="brand-tagline">Search. Discover. Apply.</span>
+        </div>
+      </a>
+
+      <!-- Main Navigation -->
+      <nav class="main-nav">
+        <a href="/" class="nav-link {% if active_page == 'home' %}active{% endif %}">Home</a>
+        <a href="/jobs" class="nav-link {% if active_page == 'jobs' %}active{% endif %}">Find Jobs</a>
+        <a href="/internships" class="nav-link {% if active_page == 'internships' %}active{% endif %}">
+          Internships <span class="nav-badge">Students</span>
+        </a>
+        <a href="/fresher" class="nav-link {% if active_page == 'fresher' %}active{% endif %}">
+          Fresher Jobs <span class="nav-badge">Entry</span>
+        </a>
+        <a href="/remote" class="nav-link {% if active_page == 'remote' %}active{% endif %}">Remote Jobs</a>
+        <a href="/companies" class="nav-link {% if active_page == 'companies' %}active{% endif %}">Companies</a>
+        <a href="/about" class="nav-link {% if active_page == 'about' %}active{% endif %}">About</a>
+      </nav>
+
+      <!-- Header Actions (Auth / User) -->
+      <div class="header-actions">
+        {% if session.get('user_id') %}
+          {% if session.get('user_role') == 'ADMIN' %}
+            <a href="/admin" class="btn btn-sm btn-outline" style="border-color: #fca5a5; color: #b91c1c;">
+              🛡️ Admin Console
+            </a>
+          {% endif %}
+          <a href="/dashboard" class="user-menu-btn">
+            <span class="avatar-initial">{{ session.get('user_name', 'U')[0] }}</span>
+            <span>{{ session.get('user_name', 'User').split(' ')[0] }}</span>
+            {% if session.get('unread_notifications', 0) > 0 %}
+              <span class="nav-badge" style="background:#fee2e2; color:#b91c1c;">{{ session.get('unread_notifications') }}</span>
+            {% endif %}
+          </a>
+          <a href="/logout" class="btn btn-sm btn-secondary">Logout</a>
+        {% else %}
+          <a href="/login" class="btn btn-sm btn-secondary">Login</a>
+          <a href="/register" class="btn btn-sm btn-primary">Register</a>
+        {% endif %}
+
+        <button class="mobile-toggle" aria-label="Toggle navigation">☰</button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Flash Messages -->
+  <div class="container" style="margin-top: 20px;">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert-message alert-{{ category }}">
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Main Content Block -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Application Tracking Modal -->
+  <div class="modal-backdrop" id="applyTrackModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Track Job Application</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="trackApplicationForm">
+        <input type="hidden" id="trackJobId" value="">
+        <div class="modal-body">
+          <p style="margin-bottom: 16px; font-size: 14px; color: var(--text-muted);">
+            Log your application status for <strong id="trackJobTitleDisplay" style="color: var(--text-main);"></strong>.
+          </p>
+          <div class="form-group">
+            <label class="form-label" for="trackStatusSelect">Current Status</label>
+            <select class="form-control" id="trackStatusSelect">
+              <option value="Applied">Applied</option>
+              <option value="Reviewing">Reviewing</option>
+              <option value="Interviewing">Interviewing</option>
+              <option value="Offered">Offered</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="trackNotesTextarea">Personal Notes / Next Steps</label>
+            <textarea class="form-control" id="trackNotesTextarea" placeholder="e.g., Applied via TechCareers, technical interview scheduled for Thursday..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-cancel-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save to Pipeline</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Job Reporting Modal -->
+  <div class="modal-backdrop" id="reportJobModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Report Job Listing</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <form id="reportJobForm">
+        <input type="hidden" id="reportJobId" value="">
+        <div class="modal-body">
+          <p style="margin-bottom: 16px; font-size: 14px; color: var(--text-muted);">
+            Reporting <strong id="reportJobTitleDisplay" style="color: var(--text-main);"></strong> to aggregator admins.
+          </p>
+          <div class="form-group">
+            <label class="form-label" for="reportReasonSelect">Reason for report</label>
+            <select class="form-control" id="reportReasonSelect" required>
+              <option value="Expired or Inactive">Job has expired / position closed</option>
+              <option value="Broken Application Link">Broken original application link</option>
+              <option value="Misleading Information">Misleading title, salary or requirements</option>
+              <option value="Duplicate Posting">Duplicate posting already listed</option>
+              <option value="Suspicious or Fraud">Suspicious recruiter / phishing attempt</option>
+              <option value="Other">Other reason</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reportDetailsTextarea">Additional Details</label>
+            <textarea class="form-control" id="reportDetailsTextarea" placeholder="Describe the issue you encountered..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-cancel-modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">Submit Report</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand-name">JOBPOST AGGREGATOR</div>
+          <p class="footer-about">
+            Smart Job Post Aggregation & Career Discovery System. Collecting, organizing, deduplicating and indexing legitimate career opportunities from verified partners.
+          </p>
+          <p style="font-size: 12px; margin-top: 12px; color: #64748b;">
+            Search. Discover. Apply.
+          </p>
+        </div>
+        <div>
+          <div class="footer-col-title">Explore Careers</div>
+          <ul class="footer-links">
+            <li><a href="/jobs">All Jobs</a></li>
+            <li><a href="/internships">Student Internships</a></li>
+            <li><a href="/fresher">Fresher & Graduate Roles</a></li>
+            <li><a href="/remote">Remote Positions</a></li>
+            <li><a href="/companies">Companies Directory</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer-col-title">Partner Sources</div>
+          <ul class="footer-links">
+            <li><a href="/jobs?source=techcareers">TechCareers Global</a></li>
+            <li><a href="/jobs?source=remotehub">RemoteHub Network</a></li>
+            <li><a href="/jobs?source=campushire">CampusHire</a></li>
+            <li><a href="/jobs?source=devjobs">DevJobs Direct</a></li>
+            <li><a href="/jobs?source=talentwire">TalentWire Feed</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer-col-title">Candidate Account</div>
+          <ul class="footer-links">
+            <li><a href="/dashboard">Candidate Dashboard</a></li>
+            <li><a href="/dashboard#applications">Application Tracker</a></li>
+            <li><a href="/dashboard#saved">Saved Jobs</a></li>
+            <li><a href="/dashboard#alerts">Job Alerts</a></li>
+            <li><a href="/dashboard#profile">Resume Profile</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>&copy; 2026 JobPost Aggregator. Powered by Python, Flask, MySQL & Vanilla Web Standards.</span>
+        <span>Authorized career aggregation engine &bull; Direct links to original sources</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/js/main.js"></script>
+</body>
+</html>

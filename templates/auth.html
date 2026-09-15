@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if mode == 'register' %}Register Account - JobPost Aggregator{% else %}Login - JobPost Aggregator{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="auth-wrapper">
+    
+    <div class="auth-header">
+      <h1 class="auth-title">
+        {% if mode == 'register' %}Create Your Account{% else %}Welcome Back{% endif %}
+      </h1>
+      <p class="auth-subtitle">
+        {% if mode == 'register' %}
+          Join JobPost Aggregator to track applications, save jobs, and receive alerts.
+        {% else %}
+          Sign in to access your saved jobs, pipeline, and career alerts.
+        {% endif %}
+      </p>
+    </div>
+
+    {% if mode == 'register' %}
+      <!-- Registration Form -->
+      <form action="/register" method="POST" id="registerForm">
+        <div class="form-group">
+          <label class="form-label" for="full_name">Full Name *</label>
+          <input type="text" name="full_name" id="full_name" class="form-control" placeholder="e.g. Jane Doe" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address *</label>
+          <input type="email" name="email" id="email" class="form-control" placeholder="name@example.com" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="phone">Phone Number</label>
+          <input type="tel" name="phone" id="phone" class="form-control" placeholder="+1 (555) 000-0000">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="location">Location *</label>
+          <input type="text" name="location" id="location" class="form-control" placeholder="e.g. San Francisco, CA" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="experience_level">Career Level</label>
+          <select name="experience_level" id="experience_level" class="form-control">
+            <option value="Fresher">Fresher / Graduate (0-1 yrs)</option>
+            <option value="1-3 years">Junior (1-3 yrs)</option>
+            <option value="3-5 years">Mid-Level (3-5 yrs)</option>
+            <option value="5+ years">Senior (5+ yrs)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password *</label>
+          <input type="password" name="password" id="password" class="form-control" placeholder="Minimum 6 characters" required minlength="6">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="confirm_password">Confirm Password *</label>
+          <input type="password" name="confirm_password" id="confirm_password" class="form-control" placeholder="Re-enter password" required minlength="6">
+          <div id="passwordMismatchError" class="form-hint" style="color: var(--danger); display: none;">
+            Passwords do not match!
+          </div>
+        </div>
+
+        <!-- Optional Admin Passcode checkbox -->
+        <div class="form-group" style="margin-top: 12px; padding: 12px; background: var(--bg-page); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+          <label class="checkbox-label" style="font-size: 13px;">
+            <input type="checkbox" id="adminCheck" onchange="document.getElementById('adminCodeGroup').style.display = this.checked ? 'block' : 'none'">
+            Register as System Administrator (Optional)
+          </label>
+          <div id="adminCodeGroup" style="display: none; margin-top: 8px;">
+            <label class="form-label" for="admin_code" style="font-size: 12px;">Admin Passcode (Default: admin123)</label>
+            <input type="password" name="admin_code" id="admin_code" class="form-control" placeholder="Enter admin passkey">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 12px;">
+          Create Free Account
+        </button>
+
+        <div style="text-align: center; margin-top: 20px; font-size: 14px; color: var(--text-muted);">
+          Already have an account? <a href="/login" style="font-weight: 600;">Sign in here</a>
+        </div>
+      </form>
+
+      <script>
+      document.getElementById('registerForm').addEventListener('submit', function(e) {
+        const p1 = document.getElementById('password').value;
+        const p2 = document.getElementById('confirm_password').value;
+        const err = document.getElementById('passwordMismatchError');
+        if (p1 !== p2) {
+          e.preventDefault();
+          err.style.display = 'block';
+        } else {
+          err.style.display = 'none';
+        }
+      });
+      </script>
+
+    {% else %}
+      <!-- Login Form -->
+      <form action="/login" method="POST">
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+        
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input type="email" name="email" id="email" class="form-control" placeholder="name@example.com" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input type="password" name="password" id="password" class="form-control" placeholder="Enter your password" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 8px;">
+          Sign In
+        </button>
+
+        <!-- Quick Demo Credentials Box -->
+        <div style="background: var(--bg-page); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; margin-top: 24px; font-size: 12px; color: var(--text-muted);">
+          <div style="font-weight: 700; color: var(--secondary); margin-bottom: 6px;">⚡ Quick Demo Accounts:</div>
+          <div style="margin-bottom: 4px;">
+            <strong>Job Seeker:</strong> alex.morgan@example.com / <code>user123</code>
+          </div>
+          <div>
+            <strong>Administrator:</strong> admin@jobpost.com / <code>admin123</code>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; font-size: 14px; color: var(--text-muted);">
+          Don't have an account yet? <a href="/register" style="font-weight: 600;">Register now</a>
+        </div>
+      </form>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

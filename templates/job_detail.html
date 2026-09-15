@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}{{ job.title }} at {{ job.company_name }} - JobPost Aggregator{% endblock %}
+
+{% block content %}
+<div class="container">
+  
+  <!-- Breadcrumbs -->
+  <div style="padding: 20px 0 10px; font-size: 13px; color: var(--text-subtle);">
+    <a href="/">Home</a> &rsaquo; 
+    <a href="/jobs">Jobs</a> &rsaquo; 
+    <a href="/jobs?category={{ job.category_slug }}">{{ job.category_name }}</a> &rsaquo; 
+    <span style="color: var(--text-main);">{{ job.title }}</span>
+  </div>
+
+  <div class="job-detail-layout">
+    
+    <!-- Main Details Column -->
+    <div class="job-detail-card">
+      
+      <!-- Duplicate Warning if cross-posted -->
+      {% if job.duplicate_cluster_id and duplicate_sources %}
+        <div class="duplicate-alert-banner">
+          <span style="font-size: 20px;">ℹ️</span>
+          <div>
+            <strong>Smart Aggregation Notice:</strong> This position is cross-posted across multiple verified boards: 
+            {% for dup in duplicate_sources %}
+              <a href="/job/{{ dup.id }}" style="font-weight: 700; text-decoration: underline; margin-left: 4px; color: #92400e;">{{ dup.source_name }}</a>{% if not loop.last %},{% endif %}
+            {% endfor %}.
+            You can compare details or apply directly via either source.
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="job-detail-header">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="company-logo-wrap" style="width: 64px; height: 64px;">
+              {% if job.company_logo_url %}
+                <img src="{{ job.company_logo_url }}" alt="{{ job.company_name }}" class="company-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                <div class="company-logo-placeholder" style="display:none; font-size: 24px;">{{ job.company_name[0] }}</div>
+              {% else %}
+                <div class="company-logo-placeholder" style="font-size: 24px;">{{ job.company_name[0] }}</div>
+              {% endif %}
+            </div>
+            <div>
+              <h1 class="job-detail-title">{{ job.title }}</h1>
+              <a href="/company/{{ job.company_slug }}" style="font-size: 16px; font-weight: 600; color: var(--text-muted);">
+                {{ job.company_name }} &bull; {{ job.company_location }}
+              </a>
+            </div>
+          </div>
+
+          <span class="source-badge badge-source-{{ job.source_code }}" style="font-size: 13px; padding: 5px 12px;">
+            Aggregated via {{ job.source_name }}
+          </span>
+        </div>
+
+        <div class="company-meta-row">
+          <span>📍 <strong>{{ job.location }}</strong></span>
+          <span>💼 <strong>{{ job.job_type }}</strong></span>
+          <span>🌐 <strong>{{ job.work_mode }}</strong></span>
+          <span>⏱️ <strong>{{ job.experience_level }}</strong></span>
+          {% if job.expires_at %}
+            <span style="color: #b45309;">⏳ Deadline: <strong>{{ job.expires_at }}</strong></span>
+          {% endif %}
+        </div>
+
+        <!-- Action Buttons Bar -->
+        <div class="job-action-buttons">
+          <a 
+            href="{{ job.original_url }}" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            class="btn btn-primary btn-lg"
+          >
+            Apply on Original Site ({{ job.source_name }}) ↗
+          </a>
+
+          <button 
+            type="button" 
+            class="btn btn-secondary btn-track-application"
+            data-job-id="{{ job.id }}"
+            data-job-title="{{ job.title }}"
+            data-current-status="{{ user_application.status if user_application else 'Applied' }}"
+            data-current-notes="{{ user_application.notes if user_application else '' }}"
+          >
+            {% if user_application %}
+              ✓ Status: {{ user_application.status }} (Edit)
+            {% else %}
+              📋 Track Application
+            {% endif %}
+          </button>
+
+          <button 
+            type="button" 
+            class="btn btn-bookmark {% if is_saved %}saved{% endif %}" 
+            data-job-id="{{ job.id }}"
+            style="width: 44px; height: 44px; font-size: 18px;"
+            title="{% if is_saved %}Saved to Bookmarks{% else %}Save Job{% endif %}"
+          >
+            {% if is_saved %}★{% else %}☆{% endif %}
+          </button>
+
+          <button 
+            type="button" 
+            class="btn btn-sm btn-outline btn-report-job"
+            data-job-id="{{ job.id }}"
+            data-job-title="{{ job.title }}"
+            style="color: var(--text-subtle); border-color: var(--border-color); margin-left: auto;"
+          >
+            🚩 Report Listing
+          </button>
+        </div>
+      </div>
+
+      <!-- Job Description -->
+      <div class="job-content-section">
+        <h2 class="job-content-title">Job Overview</h2>
+        <div class="job-body-text">{{ job.description }}</div>
+      </div>
+
+      <!-- Requirements -->
+      {% if job.requirements %}
+        <div class="job-content-section">
+          <h2 class="job-content-title">Key Qualifications & Requirements</h2>
+          <div class="job-body-text">{{ job.requirements }}</div>
+        </div>
+      {% endif %}
+
+      <!-- Benefits -->
+      {% if job.benefits %}
+        <div class="job-content-section">
+          <h2 class="job-content-title">Perks & Benefits</h2>
+          <div class="job-body-text">{{ job.benefits }}</div>
+        </div>
+      {% endif %}
+
+      <!-- Skills Required -->
+      {% if job.skills_required %}
+        <div class="job-content-section">
+          <h2 class="job-content-title">Required Skills & Technologies</h2>
+          <div class="skills-tags-wrap">
+            {% for skill in job.skills_required.split(',') %}
+              <span class="skill-pill">{{ skill.strip() }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Bottom Source Verification Box -->
+      <div style="background: var(--bg-page); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 18px; margin-top: 32px; display: flex; align-items: center; justify-content: space-between; flex-wrap: gap; gap: 16px;">
+        <div>
+          <div style="font-weight: 700; font-size: 14px; color: var(--secondary);">Source Authentication & Integrity</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+            Post ID #{{ job.id }} aggregated via authorized API connector from <strong>{{ job.source_name }}</strong>.
+          </div>
+        </div>
+        <a href="{{ job.original_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline">
+          Verify Original Link &rarr;
+        </a>
+      </div>
+
+    </div>
+
+    <!-- Sidebar Info Column -->
+    <aside>
+      
+      <!-- Salary & Quick Summary Widget -->
+      <div class="sidebar-widget">
+        <h3 class="widget-title">Compensation & Details</h3>
+        
+        <div class="info-list-row">
+          <span class="info-list-label">Offered Salary</span>
+          <span class="info-list-val" style="color: var(--primary); font-size: 15px;">
+            {% if job.salary_min and job.salary_max %}
+              ${{ "{:,}".format(job.salary_min) }} - ${{ "{:,}".format(job.salary_max) }}
+            {% elif job.salary_min %}
+              ${{ "{:,}".format(job.salary_min) }}+
+            {% else %}
+              Competitive
+            {% endif %}
+          </span>
+        </div>
+
+        <div class="info-list-row">
+          <span class="info-list-label">Job Category</span>
+          <span class="info-list-val">{{ job.category_name }}</span>
+        </div>
+
+        <div class="info-list-row">
+          <span class="info-list-label">Employment Type</span>
+          <span class="info-list-val">{{ job.job_type }}</span>
+        </div>
+
+        <div class="info-list-row">
+          <span class="info-list-label">Work Mode</span>
+          <span class="info-list-val">{{ job.work_mode }}</span>
+        </div>
+
+        <div class="info-list-row">
+          <span class="info-list-label">Experience</span>
+          <span class="info-list-val">{{ job.experience_level }}</span>
+        </div>
+
+        <div class="info-list-row">
+          <span class="info-list-label">Date Posted</span>
+          <span class="info-list-val">{{ job.posted_date }}</span>
+        </div>
+
+        <div class="info-list-row">
+          <span class="info-list-label">Source Feed</span>
+          <span class="info-list-val">{{ job.source_name }}</span>
+        </div>
+      </div>
+
+      <!-- Hiring Company Info Card -->
+      <div class="sidebar-widget">
+        <h3 class="widget-title">About {{ job.company_name }}</h3>
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 14px;">
+          {{ job.company_description }}
+        </p>
+
+        <div class="info-list-row">
+          <span class="info-list-label">Industry</span>
+          <span class="info-list-val">{{ job.company_industry }}</span>
+        </div>
+
+        <div class="info-list-row">
+          <span class="info-list-label">Company Size</span>
+          <span class="info-list-val">{{ job.company_size }}</span>
+        </div>
+
+        <div class="info-list-row">
+          <span class="info-list-label">Employee Rating</span>
+          <span class="info-list-val">⭐ {{ job.company_rating }} / 5.0</span>
+        </div>
+
+        <div style="margin-top: 16px;">
+          <a href="/company/{{ job.company_slug }}" class="btn btn-sm btn-secondary" style="width: 100%;">
+            View Company Profile & Openings
+          </a>
+        </div>
+      </div>
+
+      <!-- Share & Discovery Tips -->
+      <div class="sidebar-widget" style="background: #f8fafc;">
+        <h4 style="font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">
+          💡 Smart Aggregation Tip
+        </h4>
+        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+          Clicking "Apply" opens the employer's authentic job post directly on {{ job.source_name }}. After applying, click "Track Application" to organize interview dates in your personal pipeline.
+        </p>
+      </div>
+
+    </aside>
+
+  </div>
+</div>
+{% endblock %}

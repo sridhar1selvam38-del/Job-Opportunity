@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Control Center - JobPost Aggregator{% endblock %}
+
+{% block content %}
+<div class="dashboard-header" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #ffffff;">
+  <div class="container">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="background: #ef4444; color: #ffffff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase;">
+            System Administrator
+          </span>
+          <h1 style="font-size: 24px; font-weight: 800; color: #ffffff; margin: 0;">Aggregator Control Center</h1>
+        </div>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">
+          Multi-source feed orchestration, duplicate deduplication cluster management, and job curation
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <button type="button" id="btnSyncAllSources" class="btn btn-primary btn-sm" style="background: #3b82f6;">
+          ⟳ Sync Sources Now
+        </button>
+        <button type="button" id="btnCleanExpiredJobs" class="btn btn-outline btn-sm" style="color: #f87171; border-color: #f87171;">
+          🧹 Clean Expired Jobs
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs-container" style="margin-top: 24px;">
+      <div class="dashboard-tabs" style="border-color: #334155;">
+        <button type="button" class="dashboard-tab active" data-tab-target="adminOverview" style="color: #cbd5e1;">
+          📊 Platform Metrics
+        </button>
+        <button type="button" class="dashboard-tab" data-tab-target="adminJobs" style="color: #cbd5e1;">
+          💼 Job Management ({{ stats.total_jobs }})
+        </button>
+        <button type="button" class="dashboard-tab" data-tab-target="adminSources" style="color: #cbd5e1;">
+          📡 Sources & Feeds ({{ sources|length }})
+        </button>
+        <button type="button" class="dashboard-tab" data-tab-target="adminDuplicates" style="color: #cbd5e1;">
+          🔍 Duplicate Clusters ({{ duplicates|length }})
+        </button>
+        <button type="button" class="dashboard-tab" data-tab-target="adminReports" style="color: #cbd5e1;">
+          🚩 User Reports ({{ reports|length }})
+        </button>
+        <button type="button" class="dashboard-tab" data-tab-target="adminAddJob" style="color: #cbd5e1;">
+          ➕ Add Direct Job
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container dashboard-grid tabs-container">
+  
+  <!-- TAB 1: Platform Overview & Metrics -->
+  <div class="tab-pane active" id="adminOverview">
+    <div class="stats-grid" style="margin-bottom: 28px;">
+      <div class="stat-card">
+        <div class="stat-number">{{ stats.total_jobs }}</div>
+        <div class="stat-label">Total Aggregated Jobs</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ stats.total_sources }}</div>
+        <div class="stat-label">Active Job Sources</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ stats.total_users }}</div>
+        <div class="stat-label">Registered Candidates</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="color: #e11d48;">{{ reports|length }}</div>
+        <div class="stat-label">Pending User Reports</div>
+      </div>
+    </div>
+
+    <!-- Health Overview Cards -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px;">
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--secondary); margin-bottom: 14px;">Source Ingestion Health</h3>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Source Name</th>
+              <th>Status</th>
+              <th>Sync Frequency</th>
+              <th>Total Harvested</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in sources %}
+              <tr>
+                <td><strong>{{ s.name }}</strong></td>
+                <td>
+                  <span class="status-badge {% if s.is_active %}status-offered{% else %}status-rejected{% endif %}">
+                    {{ 'Active' if s.is_active else 'Disabled' }}
+                  </span>
+                </td>
+                <td>Every {{ s.sync_frequency_mins }} mins</td>
+                <td>{{ s.total_jobs_count }} posts</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px;">
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--secondary); margin-bottom: 14px;">Recent System Harvest Logs</h3>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Source</th>
+              <th>New Jobs</th>
+              <th>Duplicates Flagged</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in sync_logs %}
+              <tr>
+                <td>{{ log.source_name }}</td>
+                <td><span style="color: #059669; font-weight: 600;">+{{ log.jobs_added }}</span></td>
+                <td><span style="color: #d97706; font-weight: 600;">{{ log.duplicates_detected }}</span></td>
+                <td style="font-size: 12px; color: var(--text-subtle);">{{ log.created_at }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: Job Postings Management -->
+  <div class="tab-pane" id="adminJobs">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">All Aggregated Job Listings</h2>
+        <p class="section-subtitle">Search, inspect status, edit or delete aggregated postings</p>
+      </div>
+    </div>
+
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow-x: auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Job Title</th>
+            <th>Company</th>
+            <th>Source</th>
+            <th>Work Mode</th>
+            <th>Status</th>
+            <th>Posted</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for j in jobs %}
+            <tr>
+              <td>#{{ j.id }}</td>
+              <td>
+                <a href="/job/{{ j.id }}" target="_blank" style="font-weight: 600; color: var(--secondary);">{{ j.title }}</a>
+              </td>
+              <td>{{ j.company_name }}</td>
+              <td>
+                <span class="source-badge badge-source-{{ j.source_code }}">{{ j.source_name }}</span>
+              </td>
+              <td>{{ j.work_mode }}</td>
+              <td>
+                <span class="status-badge {% if j.status == 'Active' %}status-offered{% else %}status-rejected{% endif %}">
+                  {{ j.status }}
+                </span>
+              </td>
+              <td style="font-size: 12px;">{{ j.posted_date }}</td>
+              <td>
+                <div style="display: flex; gap: 6px;">
+                  <a href="/job/{{ j.id }}" class="btn btn-sm btn-outline" style="padding: 2px 8px; font-size: 12px;" target="_blank">View</a>
+                  <form action="/admin/jobs/delete" method="POST" onsubmit="return confirm('Delete this job posting?')">
+                    <input type="hidden" name="job_id" value="{{ j.id }}">
+                    <button type="submit" class="btn btn-sm btn-danger" style="padding: 2px 8px; font-size: 12px;">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 3: Job Sources & Feeds -->
+  <div class="tab-pane" id="adminSources">
+    <div style="display: grid; grid-template-columns: 1fr 360px; gap: 28px;">
+      
+      <!-- List of Sources -->
+      <div>
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Authorized Aggregation Sources</h2>
+            <p class="section-subtitle">Manage partner job platforms and API endpoints</p>
+          </div>
+        </div>
+
+        {% for src in sources %}
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="width: 12px; height: 12px; border-radius: 50%; background: {{ src.color_hex }};"></span>
+                  <h3 style="font-size: 17px; font-weight: 700; color: var(--secondary); margin: 0;">{{ src.name }}</h3>
+                  <span style="font-size: 11px; background: var(--bg-subtle); padding: 2px 6px; border-radius: 4px; font-weight: 600;">{{ src.code }}</span>
+                </div>
+                <div style="font-size: 13px; color: var(--text-muted); margin-top: 6px;">
+                  Base URL: <a href="{{ src.base_url }}" target="_blank" style="color: var(--primary);">{{ src.base_url }}</a>
+                </div>
+                <div style="font-size: 12px; color: var(--text-subtle); margin-top: 4px;">
+                  Last Synchronized: <strong>{{ src.last_sync or 'Recently' }}</strong> &bull; Total Indexed Jobs: <strong>{{ src.total_jobs_count }}</strong>
+                </div>
+              </div>
+
+              <div>
+                <form action="/admin/sources/toggle" method="POST">
+                  <input type="hidden" name="source_id" value="{{ src.id }}">
+                  <button type="submit" class="btn btn-sm {% if src.is_active %}btn-outline{% else %}btn-primary{% endif %}">
+                    {{ 'Disable Feed' if src.is_active else 'Enable Feed' }}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Add New Source Card -->
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; height: fit-content; box-shadow: var(--shadow-sm);">
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--secondary); margin-bottom: 16px;">Add New Source Feed</h3>
+        <form action="/admin/sources/add" method="POST">
+          <div class="form-group">
+            <label class="form-label" for="src_name">Source Platform Name *</label>
+            <input type="text" name="name" id="src_name" class="form-control" placeholder="e.g. AngelHire Network" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="src_code">Short Code (lowercase, no spaces) *</label>
+            <input type="text" name="code" id="src_code" class="form-control" placeholder="e.g. angelhire" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="src_url">Feed / Base URL *</label>
+            <input type="url" name="base_url" id="src_url" class="form-control" placeholder="https://jobs.example.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="src_color">Badge Accent Color</label>
+            <input type="color" name="color_hex" id="src_color" class="form-control" value="#2563eb" style="height: 40px; padding: 2px;">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%;">Register Source</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TAB 4: Duplicate Deduplication Clusters -->
+  <div class="tab-pane" id="adminDuplicates">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Duplicate Job Cluster Review</h2>
+        <p class="section-subtitle">
+          Jobs detected across multiple partner feeds with identical employer & titles. Review and remove redundancy.
+        </p>
+      </div>
+    </div>
+
+    {% if duplicates %}
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Cluster Group</th>
+              <th>Job Title</th>
+              <th>Company</th>
+              <th>Source Feed</th>
+              <th>Location</th>
+              <th>Posted Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for dup in duplicates %}
+              <tr>
+                <td><span style="font-weight: 700; color: #d97706;">{{ dup.duplicate_cluster_id }}</span></td>
+                <td><a href="/job/{{ dup.id }}" target="_blank" style="font-weight: 600;">{{ dup.title }}</a></td>
+                <td>{{ dup.company_name }}</td>
+                <td><span class="source-badge badge-source-{{ dup.source_code }}">{{ dup.source_name }}</span></td>
+                <td>{{ dup.location }}</td>
+                <td style="font-size: 12px;">{{ dup.posted_date }}</td>
+                <td>
+                  <button type="button" class="btn btn-sm btn-danger btn-remove-duplicate" data-job-id="{{ dup.id }}" style="padding: 2px 8px; font-size: 12px;">
+                    Remove Duplicate
+                  </button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="background: var(--bg-surface); padding: 40px; text-align: center; border: 1px solid var(--border-color); border-radius: var(--radius-lg); color: var(--text-muted);">
+        No unresolved duplicate clusters detected. All feeds are normalized!
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- TAB 5: User Reports -->
+  <div class="tab-pane" id="adminReports">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Candidate Reports & Flagged Listings</h2>
+        <p class="section-subtitle">Investigate expired jobs, broken links, or misleading postings flagged by users</p>
+      </div>
+    </div>
+
+    {% if reports %}
+      <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Report ID</th>
+              <th>Job Listing</th>
+              <th>Reason</th>
+              <th>Reported Details</th>
+              <th>Reporter</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rep in reports %}
+              <tr>
+                <td>#{{ rep.id }}</td>
+                <td><a href="/job/{{ rep.job_id }}" target="_blank" style="font-weight: 600;">{{ rep.job_title }}</a></td>
+                <td><span style="color: #b91c1c; font-weight: 600;">{{ rep.reason }}</span></td>
+                <td style="font-size: 13px; max-width: 250px;">{{ rep.details or 'No additional details' }}</td>
+                <td style="font-size: 12px;">{{ rep.reporter_name or 'Anonymous' }}</td>
+                <td>
+                  <span class="status-badge {% if rep.status == 'Pending' %}status-applied{% else %}status-offered{% endif %}">
+                    {{ rep.status }}
+                  </span>
+                </td>
+                <td>
+                  <div style="display: flex; gap: 6px;">
+                    <form action="/admin/reports/resolve" method="POST" style="display: inline;">
+                      <input type="hidden" name="report_id" value="{{ rep.id }}">
+                      <input type="hidden" name="action" value="resolve">
+                      <button type="submit" class="btn btn-sm btn-outline" style="padding: 2px 8px; font-size: 11px;">Dismiss</button>
+                    </form>
+                    <form action="/admin/reports/resolve" method="POST" style="display: inline;" onsubmit="return confirm('Remove this job completely?')">
+                      <input type="hidden" name="report_id" value="{{ rep.id }}">
+                      <input type="hidden" name="action" value="delete_job">
+                      <button type="submit" class="btn btn-sm btn-danger" style="padding: 2px 8px; font-size: 11px;">Delete Job</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="background: var(--bg-surface); padding: 40px; text-align: center; border: 1px solid var(--border-color); border-radius: var(--radius-lg); color: var(--text-muted);">
+        No pending user reports. All job listings are in good standing!
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- TAB 6: Add Direct Job -->
+  <div class="tab-pane" id="adminAddJob">
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px; max-width: 800px; box-shadow: var(--shadow-sm);">
+      <h2 style="font-size: 20px; font-weight: 800; color: var(--secondary); margin-bottom: 6px;">Add Direct Partner Job</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">Publish an authenticated job post directly to the aggregator index</p>
+
+      <form action="/admin/jobs/add" method="POST">
+        <div class="form-group">
+          <label class="form-label" for="job_title">Job Title *</label>
+          <input type="text" name="title" id="job_title" class="form-control" placeholder="e.g. Senior Machine Learning Engineer" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label" for="job_company">Hiring Company *</label>
+            <select name="company_id" id="job_company" class="form-control" required>
+              {% for c in companies %}
+                <option value="{{ c.id }}">{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="job_category">Category *</label>
+            <select name="category_id" id="job_category" class="form-control" required>
+              {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label" for="job_source">Source Feed *</label>
+            <select name="source_id" id="job_source" class="form-control" required>
+              {% for s in sources %}
+                <option value="{{ s.id }}">{{ s.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="job_type">Job Type</label>
+            <select name="job_type" id="job_type" class="form-control">
+              <option value="Full-time">Full-time</option>
+              <option value="Internship">Internship</option>
+              <option value="Part-time">Part-time</option>
+              <option value="Contract">Contract</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="job_work_mode">Work Mode</label>
+            <select name="work_mode" id="job_work_mode" class="form-control">
+              <option value="Remote">Remote</option>
+              <option value="Hybrid">Hybrid</option>
+              <option value="On-site">On-site</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label class="form-label" for="job_location">Location *</label>
+            <input type="text" name="location" id="job_location" class="form-control" placeholder="e.g. San Francisco, CA or Remote" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="job_sal_min">Min Salary ($)</label>
+            <input type="number" name="salary_min" id="job_sal_min" class="form-control" placeholder="100000">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="job_sal_max">Max Salary ($)</label>
+            <input type="number" name="salary_max" id="job_sal_max" class="form-control" placeholder="140000">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="job_exp">Experience Level</label>
+          <select name="experience_level" id="job_exp" class="form-control">
+            <option value="Fresher">Fresher / Graduate</option>
+            <option value="1-3 years">1 - 3 years</option>
+            <option value="3-5 years" selected>3 - 5 years</option>
+            <option value="5+ years">5+ years</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="job_url">Original Application URL *</label>
+          <input type="url" name="original_url" id="job_url" class="form-control" placeholder="https://..." required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="job_desc">Job Description *</label>
+          <textarea name="description" id="job_desc" class="form-control" rows="4" required placeholder="Detailed role description..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="job_skills">Required Skills (comma separated)</label>
+          <input type="text" name="skills_required" id="job_skills" class="form-control" placeholder="Python, PyTorch, SQL, AWS">
+        </div>
+
+        <div style="display: flex; gap: 20px; margin: 16px 0;">
+          <label class="checkbox-label">
+            <input type="checkbox" name="is_featured" value="1">
+            Feature this Job on Homepage
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="is_internship" value="1">
+            Student Internship
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="is_fresher" value="1">
+            Fresher Friendly
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" style="margin-top: 10px;">
+          Publish Aggregated Job
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

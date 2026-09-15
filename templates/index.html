@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}JobPost Aggregator - Search. Discover. Apply.{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="container hero-content">
+    
+    <div class="hero-badge">
+      <span>🚀 Smart Multi-Source Career Aggregation Engine</span>
+    </div>
+
+    <h1 class="hero-title">Find Your Next Job Opportunity</h1>
+    
+    <p class="hero-subtitle">
+      Search and discover job opportunities from multiple sources in one simple platform.
+    </p>
+
+    <!-- Search Box Card -->
+    <div class="search-box-card">
+      <form action="/jobs" method="GET" class="search-form-grid">
+        <div class="input-group">
+          <span class="input-icon">🔍</span>
+          <input 
+            type="text" 
+            name="q" 
+            class="search-input" 
+            placeholder="Job title, skill or keyword"
+            aria-label="Job title, skill or keyword"
+          >
+        </div>
+
+        <div class="input-group">
+          <span class="input-icon">📍</span>
+          <input 
+            type="text" 
+            name="location" 
+            class="search-input" 
+            placeholder="Location (e.g. San Francisco, Remote)"
+            aria-label="Location"
+          >
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg">
+          Search Jobs
+        </button>
+      </form>
+    </div>
+
+    <!-- Popular Searches -->
+    <div class="popular-searches">
+      <span class="popular-label">Popular Searches:</span>
+      <a href="/jobs?q=Python+Developer" class="popular-chip">Python Developer</a>
+      <a href="/jobs?q=UI%2FUX+Designer" class="popular-chip">UI/UX Designer</a>
+      <a href="/jobs?q=Java+Developer" class="popular-chip">Java Developer</a>
+      <a href="/jobs?q=Data+Analyst" class="popular-chip">Data Analyst</a>
+      <a href="/jobs?q=Web+Developer" class="popular-chip">Web Developer</a>
+      <a href="/internships" class="popular-chip">Internship</a>
+      <a href="/remote" class="popular-chip">Remote Jobs</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- Stats Bar -->
+<section class="stats-bar">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number">{{ stats.total_jobs }}+</div>
+        <div class="stat-label">Active Aggregated Jobs</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ stats.total_sources }}</div>
+        <div class="stat-label">Verified Job Sources</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">{{ stats.total_companies }}+</div>
+        <div class="stat-label">Hiring Companies</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">100%</div>
+        <div class="stat-label">Direct Original Source Links</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Job Discovery Categories -->
+<section style="padding: 48px 0; background: var(--bg-surface); border-bottom: 1px solid var(--border-color);">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Explore by Industry & Specialization</h2>
+        <p class="section-subtitle">Browse aggregated opportunities categorized across high-demand tech domains</p>
+      </div>
+      <a href="/jobs" class="btn btn-sm btn-outline">View All Categories &rarr;</a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px;">
+      {% for cat in categories %}
+        <a href="/jobs?category={{ cat.slug }}" style="background: var(--bg-page); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; align-items: center; justify-content: space-between; text-decoration: none; color: inherit; transition: var(--transition);" onmouseover="this.style.borderColor='var(--primary)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border-color)'; this.style.transform='none'">
+          <div>
+            <div style="font-weight: 700; font-size: 15px; color: var(--secondary); margin-bottom: 2px;">{{ cat.name }}</div>
+            <div style="font-size: 12px; color: var(--text-subtle);">{{ cat.job_count }} open opportunities</div>
+          </div>
+          <span style="font-size: 18px; color: var(--primary);">&rarr;</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Featured Jobs Section -->
+<section style="padding: 54px 0;">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Featured Career Opportunities</h2>
+        <p class="section-subtitle">Top verified listings aggregated from our partner feeds</p>
+      </div>
+      <a href="/jobs" class="btn btn-sm btn-secondary">Browse All ({{ stats.total_jobs }}) &rarr;</a>
+    </div>
+
+    <div class="job-cards-grid">
+      {% for job in featured_jobs %}
+        <div class="job-card">
+          <div class="job-card-top">
+            <div class="company-logo-wrap">
+              {% if job.company_logo_url %}
+                <img src="{{ job.company_logo_url }}" alt="{{ job.company_name }}" class="company-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                <div class="company-logo-placeholder" style="display:none;">{{ job.company_name[0] }}</div>
+              {% else %}
+                <div class="company-logo-placeholder">{{ job.company_name[0] }}</div>
+              {% endif %}
+            </div>
+
+            <div class="job-card-header-info">
+              <a href="/company/{{ job.company_slug }}" class="company-name-link">{{ job.company_name }}</a>
+              <h3 style="margin: 0;">
+                <a href="/job/{{ job.id }}" class="job-title-link">{{ job.title }}</a>
+              </h3>
+            </div>
+
+            <span class="source-badge badge-source-{{ job.source_code }}">
+              {{ job.source_name }}
+            </span>
+          </div>
+
+          <div class="job-details-meta">
+            <span class="meta-item">📍 {{ job.location }}</span>
+            <span class="meta-item">💼 {{ job.job_type }}</span>
+            <span class="meta-item">⏱️ {{ job.experience_level }}</span>
+          </div>
+
+          <div class="job-badges-row">
+            {% if job.is_remote %}
+              <span class="tag-badge remote">Remote</span>
+            {% endif %}
+            {% if job.is_internship %}
+              <span class="tag-badge internship">Internship</span>
+            {% endif %}
+            {% if job.is_fresher %}
+              <span class="tag-badge fresher">Fresher Friendly</span>
+            {% endif %}
+            {% if job.duplicate_cluster_id %}
+              <span class="tag-badge duplicate" title="Aggregated from multiple sources">Multi-source</span>
+            {% endif %}
+          </div>
+
+          <div class="job-card-footer">
+            <div class="salary-tag">
+              {% if job.salary_min and job.salary_max %}
+                ${{ "{:,}".format(job.salary_min) }} - ${{ "{:,}".format(job.salary_max) }}
+              {% elif job.salary_min %}
+                ${{ "{:,}".format(job.salary_min) }}+
+              {% else %}
+                Competitive
+              {% endif %}
+            </div>
+
+            <div class="card-actions">
+              <button 
+                type="button" 
+                class="btn-bookmark {% if job.is_saved %}saved{% endif %}" 
+                data-job-id="{{ job.id }}"
+                title="{% if job.is_saved %}Saved to Bookmarks{% else %}Save Job{% endif %}"
+              >
+                {% if job.is_saved %}★{% else %}☆{% endif %}
+              </button>
+              <a href="/job/{{ job.id }}" class="btn btn-sm btn-primary">Details & Apply</a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</section>
+
+<!-- Aggregator System Highlights -->
+<section style="background: var(--bg-surface); padding: 56px 0; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+  <div class="container">
+    <div style="text-align: center; max-width: 700px; margin: 0 auto 40px;">
+      <h2 class="section-title">How JobPost Aggregator Works</h2>
+      <p class="section-subtitle">
+        One unified search engine connecting multiple authorized job boards with duplicate detection and verified application links.
+      </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
+      <div style="background: var(--bg-page); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px;">
+        <div style="font-size: 28px; margin-bottom: 12px;">📡</div>
+        <h3 style="font-size: 17px; font-weight: 700; color: var(--secondary); margin-bottom: 8px;">1. Continuous Feed Sync</h3>
+        <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;">
+          Our background harvester queries verified partner APIs (TechCareers, RemoteHub, CampusHire, DevJobs) every 30 minutes to collect fresh postings.
+        </p>
+      </div>
+
+      <div style="background: var(--bg-page); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px;">
+        <div style="font-size: 28px; margin-bottom: 12px;">🔍</div>
+        <h3 style="font-size: 17px; font-weight: 700; color: var(--secondary); margin-bottom: 8px;">2. Smart Deduplication & Expiry</h3>
+        <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;">
+          Cross-board posts are automatically clustered so you never see repetitive spam. Expired deadlines are continuously detected and pruned.
+        </p>
+      </div>
+
+      <div style="background: var(--bg-page); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px;">
+        <div style="font-size: 28px; margin-bottom: 12px;">🎯</div>
+        <h3 style="font-size: 17px; font-weight: 700; color: var(--secondary); margin-bottom: 8px;">3. Direct Source Application</h3>
+        <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6;">
+          Apply directly on the original employer portal with zero intermediaries. Track all your job applications in your centralized dashboard pipeline.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Partner Sources Bar -->
+<section style="padding: 40px 0;">
+  <div class="container" style="text-align: center;">
+    <div style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-subtle); margin-bottom: 20px;">
+      Aggregated From Top Authorized Career Sources
+    </div>
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 16px;">
+      {% for source in sources %}
+        <a href="/jobs?source={{ source.code }}" style="background: var(--bg-surface); border: 1px solid var(--border-color); padding: 10px 18px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: {{ source.color_hex }};"></span>
+          {{ source.name }}
+          <span style="font-size: 11px; background: var(--bg-subtle); padding: 2px 6px; border-radius: var(--radius-full);">{{ source.total_jobs_count }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% endblock %}

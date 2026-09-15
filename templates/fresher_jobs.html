@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Fresher Jobs & Graduate Roles - JobPost Aggregator{% endblock %}
+
+{% block content %}
+<div style="background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%); border-bottom: 1px solid var(--border-color); padding: 48px 0 36px; text-align: center;">
+  <div class="container" style="max-width: 800px;">
+    <span class="tag-badge fresher" style="font-size: 13px; padding: 4px 12px; margin-bottom: 14px; display: inline-block;">
+      🌱 Entry Level & Recent Graduates (0-1 Years)
+    </span>
+    <h1 style="font-size: 34px; font-weight: 800; color: var(--secondary); margin-bottom: 10px;">
+      Fresher & Entry-Level Career Openings
+    </h1>
+    <p style="font-size: 16px; color: var(--text-muted); line-height: 1.6;">
+      Start your professional journey with organizations that invest in graduate training, mentorship, and junior developer career paths.
+    </p>
+  </div>
+</div>
+
+<div class="container" style="padding: 36px 0;">
+  
+  <div class="section-header">
+    <div>
+      <h2 class="section-title">Fresher-Friendly Positions ({{ jobs|length }})</h2>
+      <p class="section-subtitle">No prior 3+ years experience required &bull; Comprehensive onboarding</p>
+    </div>
+    <a href="/jobs?experience=Fresher" class="btn btn-sm btn-outline">Refine Search &rarr;</a>
+  </div>
+
+  {% if jobs %}
+    <div class="job-cards-grid">
+      {% for job in jobs %}
+        <div class="job-card">
+          <div class="job-card-top">
+            <div class="company-logo-wrap">
+              {% if job.company_logo_url %}
+                <img src="{{ job.company_logo_url }}" alt="{{ job.company_name }}" class="company-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                <div class="company-logo-placeholder" style="display:none;">{{ job.company_name[0] }}</div>
+              {% else %}
+                <div class="company-logo-placeholder">{{ job.company_name[0] }}</div>
+              {% endif %}
+            </div>
+
+            <div class="job-card-header-info">
+              <a href="/company/{{ job.company_slug }}" class="company-name-link">{{ job.company_name }}</a>
+              <h3 style="margin: 0;">
+                <a href="/job/{{ job.id }}" class="job-title-link">{{ job.title }}</a>
+              </h3>
+            </div>
+
+            <span class="source-badge badge-source-{{ job.source_code }}">
+              {{ job.source_name }}
+            </span>
+          </div>
+
+          <div class="job-details-meta">
+            <span class="meta-item">📍 {{ job.location }}</span>
+            <span class="meta-item">💼 {{ job.job_type }}</span>
+            <span class="meta-item">🌱 Fresher</span>
+          </div>
+
+          <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+            {{ job.description }}
+          </p>
+
+          <div class="job-card-footer">
+            <div class="salary-tag">
+              {% if job.salary_min and job.salary_max %}
+                ${{ "{:,}".format(job.salary_min) }} - ${{ "{:,}".format(job.salary_max) }}
+              {% elif job.salary_min %}
+                ${{ "{:,}".format(job.salary_min) }}+
+              {% else %}
+                Competitive
+              {% endif %}
+            </div>
+
+            <div class="card-actions">
+              <button 
+                type="button" 
+                class="btn-bookmark {% if job.is_saved %}saved{% endif %}" 
+                data-job-id="{{ job.id }}"
+                title="Save Job"
+              >
+                {% if job.is_saved %}★{% else %}☆{% endif %}
+              </button>
+              <a href="/job/{{ job.id }}" class="btn btn-sm btn-primary">Details & Apply</a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div style="background: var(--bg-surface); padding: 48px; text-align: center; border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+      <p>No active fresher openings currently. Try browsing all tech jobs!</p>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
