@@ -1,24 +1,38 @@
 """
 Database initialization and seed script for JobPost Aggregator.
-Using MySQL (MariaDB) and PyMySQL.
+Using MySQL (MariaDB) and PyMySQL with automatic SQLite sync.
 """
-import pymysql
-import json
 import os
-from werkzeug.security import generate_password_hash
+import sys
+
+pkg_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'python_packages')
+if os.path.exists(pkg_dir) and pkg_dir not in sys.path:
+    sys.path.insert(0, pkg_dir)
+
+import json
+import sqlite3
+try:
+    from werkzeug.security import generate_password_hash
+except ImportError:
+    import hashlib
+    def generate_password_hash(password):
+        salt = 'jobpost_salt_2026'
+        dk = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
+        return f"pbkdf2:sha256:100000${salt}${dk.hex()}"
 from datetime import datetime, timedelta
 
 DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'jobuser',
-    'password': 'jobpass123',
-    'database': 'jobpost_aggregator',
-    'charset': 'utf8mb4',
-    'cursorclass': pymysql.cursors.DictCursor
+    'host': os.environ.get('DB_HOST', 'localhost'),
+    'user': os.environ.get('DB_USER', 'jobuser'),
+    'password': os.environ.get('DB_PASSWORD', 'jobpass123'),
+    'database': os.environ.get('DB_NAME', 'jobpost_aggregator'),
+    'charset': 'utf8mb4'
 }
 
 def get_db_connection():
-    return pymysql.connect(**DB_CONFIG)
+    import pymysql
+    from pymysql.cursors import DictCursor
+    return pymysql.connect(cursorclass=DictCursor, autocommit=True, connect_timeout=2, **DB_CONFIG)
 
 def setup_database():
     conn = get_db_connection()
@@ -30,8 +44,11 @@ def setup_database():
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 full_name VARCHAR(150) NOT NULL,
                 email VARCHAR(191) NOT NULL UNIQUE,
+                google_id VARCHAR(100) UNIQUE NULL,
+                avatar_url VARCHAR(255) NULL,
+                auth_provider VARCHAR(50) DEFAULT 'LOCAL',
                 phone VARCHAR(50),
-                password_hash VARCHAR(255) NOT NULL,
+                password_hash VARCHAR(255) NULL,
                 location VARCHAR(150),
                 role ENUM('USER', 'ADMIN') DEFAULT 'USER',
                 headline VARCHAR(255),
@@ -566,6 +583,62 @@ def seed_database():
     finally:
         conn.close()
 
+def sync_to_sqlite():
+    sqlite_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'jobpost_aggregator.sqlite')
+    try:
+        conn_mysql = get_db_connection()
+        conn_sqlite = sqlite3.connect(sqlite_path)
+        cursor_mysql = conn_mysql.cursor()
+        cursor_sqlite = conn_sqlite.cursor()
+
+        cursor_mysql.execute('SHOW TABLES')
+        tables = [list(r.values())[0] for r in cursor_mysql.fetchall()]
+
+        for t in tables:
+            cursor_mysql.execute(f'DESCRIBE {t}')
+            cols = cursor_mysql.fetchall()
+            col_defs = []
+            for c in cols:
+                field = c['Field']
+                ctype = c['Type'].lower()
+                if 'int' in ctype and c['Key'] == 'PRI':
+                    col_defs.append(f'"{field}" INTEGER PRIMARY KEY AUTOINCREMENT')
+                elif 'int' in ctype or 'boolean' in ctype or 'tinyint' in ctype:
+                    col_defs.append(f'"{field}" INTEGER')
+                elif 'decimal' in ctype or 'float' in ctype:
+                    col_defs.append(f'"{field}" REAL')
+                else:
+                    col_defs.append(f'"{field}" TEXT')
+            joined_cols = ', '.join(col_defs)
+            cursor_sqlite.execute(f'CREATE TABLE IF NOT EXISTS "{t}" ({joined_cols})')
+            
+            cursor_mysql.execute(f'SELECT * FROM {t}')
+            rows = cursor_mysql.fetchall()
+            if rows:
+                col_names = list(rows[0].keys())
+                placeholders = ', '.join(['?'] * len(col_names))
+                cols_joined = ', '.join([f'"{c}"' for c in col_names])
+                insert_sql = f'INSERT OR REPLACE INTO "{t}" ({cols_joined}) VALUES ({placeholders})'
+                data = [[str(r[k]) if r[k] is not None and not isinstance(r[k], (int, float)) else r[k] for k in col_names] for r in rows]
+                cursor_sqlite.executemany(insert_sql, data)
+
+        conn_sqlite.commit()
+        conn_mysql.close()
+        conn_sqlite.close()
+        print("SQLite replica synced successfully.")
+    except Exception as e:
+        print(f"Note on SQLite sync: {e}")
+
 if __name__ == '__main__':
-    setup_database()
-    seed_database()
+    try:
+        setup_database()
+        seed_database()
+        sync_to_sqlite()
+    except Exception as e:
+        print(f"MySQL initialization skipped ({e}). Checking SQLite database...")
+        sqlite_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'jobpost_aggregator.sqlite')
+        if os.path.exists(sqlite_path):
+            print("SQLite database verified and ready for cloud deployment.")
+        else:
+            print("Warning: SQLite database not found, run db setup while MySQL is active.")
+

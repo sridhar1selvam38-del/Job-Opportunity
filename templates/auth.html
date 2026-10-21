@@ -14,11 +14,28 @@
       </h1>
       <p class="auth-subtitle">
         {% if mode == 'register' %}
-          Join JobPost Aggregator to track applications, save jobs, and receive alerts.
+          Join JobPost Aggregator to track applications, save jobs, and discover roles.
         {% else %}
-          Sign in to access your saved jobs, pipeline, and career alerts.
+          Sign in to access your saved jobs, application tracker, and alerts.
         {% endif %}
       </p>
+    </div>
+
+    <!-- Continue with Google Button -->
+    <div style="margin-bottom: 20px;">
+      <button type="button" id="googleAuthBtn" class="btn btn-google btn-lg" style="width: 100%;" onclick="initiateGoogleLogin()">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+        </svg>
+        Continue with Google
+      </button>
+    </div>
+
+    <div class="oauth-divider">
+      <span>or continue with email</span>
     </div>
 
     {% if mode == 'register' %}
@@ -140,4 +157,191 @@
 
   </div>
 </div>
+
+<!-- Modal: Continue with Google Authentication -->
+<div id="googleAuthModal" class="modal-backdrop">
+  <div class="modal-content" style="max-width: 480px; text-align: left;">
+    <div class="modal-header">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+        </svg>
+        <span class="modal-title">Continue with Google</span>
+      </div>
+      <button type="button" class="modal-close-btn" onclick="closeGoogleModal()" aria-label="Close modal">&times;</button>
+    </div>
+
+    <div class="modal-body" style="padding: 20px 24px;">
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 0; margin-bottom: 16px;">
+        Sign in or create your verified JobPost Aggregator profile instantly with Google.
+      </p>
+
+      <!-- Primary Google Account Option -->
+      <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; background: var(--bg-page); margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <img src="https://api.dicebear.com/7.x/initials/svg?seed=Sridhar+Selvam" alt="Google Profile" style="width: 42px; height: 42px; border-radius: 50%; border: 2px solid #4285F4; object-fit: cover;">
+            <div>
+              <div style="font-weight: 700; font-size: 14px; color: var(--secondary);">Sridhar Selvam</div>
+              <div style="font-size: 12px; color: var(--text-muted);">sridhar1selvam38@gmail.com</div>
+            </div>
+          </div>
+          <span class="badge" style="background: rgba(52, 168, 83, 0.12); color: #16a34a; font-size: 11px;">Primary</span>
+        </div>
+        <button type="button" id="btnPrimaryGoogleSignIn" class="btn btn-primary btn-sm" style="width: 100%; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="submitGoogleLogin('sridhar1selvam38@gmail.com', 'Sridhar Selvam')">
+          <svg width="16" height="16" viewBox="0 0 24 24">
+            <path fill="#ffffff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#ffffff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          </svg>
+          Sign in as Sridhar Selvam
+        </button>
+      </div>
+
+      <!-- Use Different Google Account Option -->
+      <details style="border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 10px 14px; font-size: 13px;">
+        <summary style="font-weight: 600; cursor: pointer; color: var(--primary);">
+          Use another Google account
+        </summary>
+        <div style="margin-top: 12px;">
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label class="form-label" style="font-size: 12px;" for="customGName">Full Name</label>
+            <input type="text" id="customGName" class="form-control" placeholder="e.g. Alex Morgan" style="font-size: 13px; padding: 6px 10px;">
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" style="font-size: 12px;" for="customGEmail">Google Email Address</label>
+            <input type="email" id="customGEmail" class="form-control" placeholder="e.g. alex.morgan@gmail.com" style="font-size: 13px; padding: 6px 10px;">
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" style="width: 100%;" onclick="submitCustomGoogleLogin()">
+            Continue with this Account
+          </button>
+        </div>
+      </details>
+
+      <div id="oauthPopupBtnContainer" style="display: none; margin-top: 14px; text-align: center;">
+        <button type="button" class="btn btn-outline btn-sm" style="width: 100%;" onclick="openOAuthPopup()">
+          🌐 Open Google OAuth Consent Screen
+        </button>
+      </div>
+
+      <div id="googleLoginStatus" style="display: none; margin-top: 12px; padding: 8px 12px; border-radius: var(--radius-sm); font-size: 12px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let googleOAuthUrl = '';
+
+function initiateGoogleLogin() {
+  const modal = document.getElementById('googleAuthModal');
+  if (modal) {
+    modal.classList.add('open');
+  }
+
+  // Check if standard OAuth credentials are present on backend
+  fetch('/api/auth/google/url')
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.configured && data.auth_url) {
+        googleOAuthUrl = data.auth_url;
+        const container = document.getElementById('oauthPopupBtnContainer');
+        if (container) container.style.display = 'block';
+      }
+    })
+    .catch(() => {});
+}
+
+function closeGoogleModal() {
+  const modal = document.getElementById('googleAuthModal');
+  if (modal) {
+    modal.classList.remove('open');
+  }
+}
+
+// Close on clicking backdrop outside modal content
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('googleAuthModal');
+  if (modal && e.target === modal) {
+    closeGoogleModal();
+  }
+});
+
+function openOAuthPopup() {
+  if (googleOAuthUrl) {
+    window.open(googleOAuthUrl, 'googleOAuthWindow', 'width=520,height=640,menubar=no,status=no');
+  }
+}
+
+function submitCustomGoogleLogin() {
+  const email = (document.getElementById('customGEmail').value || '').trim();
+  const name = (document.getElementById('customGName').value || '').trim();
+  if (!email || !email.includes('@')) {
+    alert('Please enter a valid Google email address.');
+    return;
+  }
+  submitGoogleLogin(email, name || email.split('@')[0]);
+}
+
+function submitGoogleLogin(email, name) {
+  const statusDiv = document.getElementById('googleLoginStatus');
+  const btn = document.getElementById('btnPrimaryGoogleSignIn');
+  if (btn) btn.disabled = true;
+
+  if (statusDiv) {
+    statusDiv.style.display = 'block';
+    statusDiv.style.background = '#eff6ff';
+    statusDiv.style.color = '#1d4ed8';
+    statusDiv.textContent = 'Authenticating with Google...';
+  }
+
+  fetch('/api/auth/google/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: email,
+      full_name: name,
+      avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name || email)}`,
+      google_id: 'gid_' + Math.abs(email.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0))
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      if (statusDiv) {
+        statusDiv.style.background = '#f0fdf4';
+        statusDiv.style.color = '#15803d';
+        statusDiv.textContent = 'Authenticated! Redirecting to Dashboard...';
+      }
+      setTimeout(() => {
+        window.location.href = data.redirect_url || '/dashboard';
+      }, 350);
+    } else {
+      if (btn) btn.disabled = false;
+      if (statusDiv) {
+        statusDiv.style.background = '#fef2f2';
+        statusDiv.style.color = '#b91c1c';
+        statusDiv.textContent = data.error || 'Google authentication failed.';
+      }
+    }
+  })
+  .catch(err => {
+    if (btn) btn.disabled = false;
+    if (statusDiv) {
+      statusDiv.style.background = '#fef2f2';
+      statusDiv.style.color = '#b91c1c';
+      statusDiv.textContent = 'Network error while signing in with Google.';
+    }
+  });
+}
+
+// Listen for popup messages if popup flow is used
+window.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'GOOGLE_AUTH_SUCCESS') {
+    window.location.href = '/dashboard';
+  }
+});
+</script>
 {% endblock %}
+

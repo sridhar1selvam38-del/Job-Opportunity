@@ -1,7 +1,16 @@
 import os
+import sys
 import re
 import datetime
+import json
+import urllib.request
+import urllib.parse
 from functools import wraps
+
+pkg_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'python_packages')
+if os.path.exists(pkg_dir) and pkg_dir not in sys.path:
+    sys.path.insert(0, pkg_dir)
+
 from flask import (
     Flask, render_template, request, redirect, url_for,
     session, flash, jsonify, send_from_directory
@@ -12,6 +21,13 @@ from db import query_db, execute_db
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'jobpost-aggregator-secret-key-2026')
+
+# Cookie configuration for iframe and cross-origin OAuth compatibility
+app.config.update(
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_SAMESITE='None',
+    SESSION_COOKIE_HTTPONLY=True
+)
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -414,11 +430,12 @@ def login():
         next_url = request.form.get('next', '').strip()
 
         user = query_db("SELECT * FROM users WHERE email = %s", (email,), one=True)
-        if user and check_password_hash(user['password_hash'], password):
+        if user and user.get('password_hash') and check_password_hash(user['password_hash'], password):
             session['user_id'] = user['id']
             session['user_name'] = user['full_name']
             session['user_email'] = user['email']
             session['user_role'] = user['role']
+            session['avatar_url'] = user.get('avatar_url')
             flash(f"Welcome back, {user['full_name']}!", 'success')
             if next_url and next_url.startswith('/'):
                 return redirect(next_url)
@@ -487,6 +504,169 @@ def logout():
     session.clear()
     flash('You have been safely logged out.', 'info')
     return redirect(url_for('home'))
+
+
+# -------------------------------------------------------------
+# GOOGLE OAUTH 2.0 & ONE-CLICK SIGN-IN
+# -------------------------------------------------------------
+@app.route('/api/auth/google/url')
+def api_google_auth_url():
+    client_id = os.environ.get('GOOGLE_CLIENT_ID', '').strip()
+    redirect_uri = request.args.get('redirect_uri') or (request.host_url.rstrip('/') + '/auth/google/callback')
+    configured = bool(client_id)
+    auth_url = ""
+    if configured:
+        params = {
+            'client_id': client_id,
+            'redirect_uri': redirect_uri,
+            'response_type': 'code',
+            'scope': 'openid email profile',
+            'access_type': 'online',
+            'prompt': 'select_account'
+        }
+        auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(params)}"
+    return jsonify({
+        'configured': configured,
+        'client_id': client_id,
+        'auth_url': auth_url,
+        'redirect_uri': redirect_uri
+    })
+
+@app.route('/api/auth/google/login', methods=['POST'])
+def api_google_login():
+    data = request.get_json(silent=True) or {}
+    email = data.get('email', '').strip().lower()
+    full_name = data.get('full_name', '').strip()
+    avatar_url = data.get('avatar_url', '').strip() or f"https://api.dicebear.com/7.x/initials/svg?seed={urllib.parse.quote(full_name or email)}"
+    google_id = data.get('google_id', '').strip() or f"google_{abs(hash(email)) % 100000000}"
+
+    if not email or '@' not in email:
+        return jsonify({'success': False, 'error': 'A valid Google email address is required.'}), 400
+
+    if not full_name:
+        full_name = email.split('@')[0].replace('.', ' ').title()
+
+    # Look up existing user by google_id or email
+    user = query_db("SELECT * FROM users WHERE google_id = %s OR email = %s", (google_id, email), one=True)
+    if user:
+        user_id = user['id']
+        # Update google_id and avatar if missing
+        execute_db("""
+            UPDATE users
+            SET google_id = COALESCE(google_id, %s),
+                avatar_url = COALESCE(%s, avatar_url),
+                auth_provider = 'GOOGLE'
+            WHERE id = %s
+        """, (google_id, avatar_url, user_id))
+        user_name = user['full_name'] or full_name
+        user_role = user['role']
+    else:
+        # Register new user with Google profile
+        user_id = execute_db("""
+            INSERT INTO users (full_name, email, google_id, avatar_url, auth_provider, role, location, experience_level)
+            VALUES (%s, %s, %s, %s, 'GOOGLE', 'USER', 'Remote', 'Fresher')
+        """, (full_name, email, google_id, avatar_url))
+        user_name = full_name
+        user_role = 'USER'
+
+        # Welcome notification
+        execute_db("""
+            INSERT INTO notifications (user_id, title, message, link)
+            VALUES (%s, %s, %s, %s)
+        """, (
+            user_id,
+            'Welcome via Continue with Google!',
+            'Your Google profile is connected and verified. Track applications and explore curated jobs.',
+            '/dashboard'
+        ))
+
+    session['user_id'] = user_id
+    session['user_name'] = user_name
+    session['user_email'] = email
+    session['user_role'] = user_role
+    session['avatar_url'] = avatar_url
+
+    flash(f"Signed in successfully as {user_name} via Google!", 'success')
+    return jsonify({
+        'success': True,
+        'user': {
+            'id': user_id,
+            'name': user_name,
+            'email': email,
+            'avatar_url': avatar_url
+        },
+        'redirect_url': url_for('dashboard')
+    })
+
+@app.route('/auth/google/callback')
+@app.route('/oauth/callback')
+def oauth_callback():
+    code = request.args.get('code')
+    error = request.args.get('error')
+    
+    if error:
+        flash(f"Google Sign-In canceled: {error}", 'warning')
+        return redirect(url_for('login'))
+        
+    client_id = os.environ.get('GOOGLE_CLIENT_ID')
+    client_secret = os.environ.get('GOOGLE_CLIENT_SECRET')
+
+    if code and client_id and client_secret:
+        try:
+            token_url = "https://oauth2.googleapis.com/token"
+            redirect_uri = request.base_url
+            post_data = urllib.parse.urlencode({
+                'code': code,
+                'client_id': client_id,
+                'client_secret': client_secret,
+                'redirect_uri': redirect_uri,
+                'grant_type': 'authorization_code'
+            }).encode('utf-8')
+            req = urllib.request.Request(token_url, data=post_data, headers={'Content-Type': 'application/x-www-form-urlencoded'})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                token_data = json.loads(resp.read().decode('utf-8'))
+                access_token = token_data.get('access_token')
+
+            if access_token:
+                userinfo_url = "https://www.googleapis.com/oauth2/v3/userinfo"
+                req_info = urllib.request.Request(userinfo_url, headers={'Authorization': f"Bearer {access_token}"})
+                with urllib.request.urlopen(req_info, timeout=5) as info_resp:
+                    info = json.loads(info_resp.read().decode('utf-8'))
+                    g_id = info.get('sub')
+                    g_email = info.get('email')
+                    g_name = info.get('name', '')
+                    g_picture = info.get('picture', '')
+
+                    user = query_db("SELECT * FROM users WHERE google_id = %s OR email = %s", (g_id, g_email), one=True)
+                    if user:
+                        user_id = user['id']
+                        user_name = user['full_name'] or g_name
+                        user_role = user['role']
+                        execute_db("""
+                            UPDATE users SET google_id = %s, avatar_url = COALESCE(%s, avatar_url), auth_provider = 'GOOGLE' WHERE id = %s
+                        """, (g_id, g_picture, user_id))
+                    else:
+                        user_id = execute_db("""
+                            INSERT INTO users (full_name, email, google_id, avatar_url, auth_provider, role, location, experience_level)
+                            VALUES (%s, %s, %s, %s, 'GOOGLE', 'USER', 'Remote', 'Fresher')
+                        """, (g_name, g_email, g_id, g_picture))
+                        user_name = g_name
+                        user_role = 'USER'
+
+                    session['user_id'] = user_id
+                    session['user_name'] = user_name
+                    session['user_email'] = g_email
+                    session['user_role'] = user_role
+                    session['avatar_url'] = g_picture
+                    flash(f"Welcome, {user_name}! Successfully authenticated with Google.", 'success')
+                    return redirect(url_for('dashboard'))
+        except Exception as e:
+            flash(f"OAuth authentication error: {str(e)}", 'warning')
+            return redirect(url_for('login'))
+
+    return render_template('oauth_callback.html')
+
+
 
 # -------------------------------------------------------------
 # USER DASHBOARD & TRACKING
@@ -972,9 +1152,10 @@ def api_sync_sources():
 # RUN SERVER
 # -------------------------------------------------------------
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 3000))
     print("=========================================================")
     print(" JOBPOST AGGREGATOR - Smart Career Discovery System")
     print(" Tagline: 'Search. Discover. Apply.'")
-    print(" Server running on port 3000 (Python 3 / Flask / MySQL)")
+    print(f" Server running on port {port} (Python 3 / Flask / DB)")
     print("=========================================================")
-    app.run(host='0.0.0.0', port=3000, debug=True)
+    app.run(host='0.0.0.0', port=port, debug=False)

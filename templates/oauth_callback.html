@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Google Authentication - JobPost Aggregator</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f8fafc;
+      color: #334155;
+    }
+    .card {
+      background: #fff;
+      padding: 32px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #2563eb;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner"></div>
+    <h3 style="margin-top: 0; margin-bottom: 8px;">Authenticating with Google...</h3>
+    <p style="font-size: 14px; color: #64748b; margin-bottom: 20px;">
+      Completing authentication with JobPost Aggregator. You will be redirected shortly.
+    </p>
+    <a href="/dashboard" id="fallbackLink" style="font-size: 13px; color: #2563eb; text-decoration: none; font-weight: 600;">Click here if not redirected automatically</a>
+  </div>
+
+  <script>
+    try {
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({ type: 'GOOGLE_AUTH_SUCCESS' }, window.location.origin);
+        setTimeout(function() {
+          window.close();
+        }, 500);
+      } else {
+        setTimeout(function() {
+          window.location.href = '/dashboard';
+        }, 1000);
+      }
+    } catch(e) {
+      setTimeout(function() {
+        window.location.href = '/dashboard';
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
