@@ -726,11 +726,15 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Start Server on 0.0.0.0
-app.listen(port, '0.0.0.0', () => {
-  console.log('=========================================================');
-  console.log(' JOBPOST AGGREGATOR - Production Node.js / Express Server');
-  console.log(` Server actively listening on 0.0.0.0:${port}`);
-  console.log(' Ready for Cloud Run & AI Studio deployment');
-  console.log('=========================================================');
-});
+// Export app for Vercel and serverless environments
+export default app;
+
+if (!process.env.VERCEL) {
+  app.listen(port, '0.0.0.0', () => {
+    console.log('=========================================================');
+    console.log(' JOBPOST AGGREGATOR - Production Node.js / Express Server');
+    console.log(` Server actively listening on 0.0.0.0:${port}`);
+    console.log(' Ready for Cloud Run & AI Studio deployment');
+    console.log('=========================================================');
+  });
+}
